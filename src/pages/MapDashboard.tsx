@@ -1,39 +1,80 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Navigation, Filter, Menu, Bell, Star, Clock, Zap, Loader2 } from 'lucide-react';
+import { Search, MapPin, Navigation, Filter, Menu, Bell, Star, Clock, Zap, Loader2, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useApp } from '@/contexts/AppContext';
 import BottomNav from '@/components/BottomNav';
 import MapView from '@/components/MapView';
+import AmenityFilter from '@/components/AmenityFilter';
 import { useUserLocation } from '@/hooks/useUserLocation';
+import { useParkingSpots, ParkingSpot } from '@/hooks/useParkingSpots';
+import { useBookings } from '@/hooks/useBookings';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useAuth } from '@/hooks/useAuth';
 
 const MapDashboard = () => {
   const navigate = useNavigate();
-  const { parkingSpots, setSelectedSpot, activeBooking } = useApp();
+  const { isAuthenticated } = useAuth();
+  const { data: parkingSpots = [], isLoading: spotsLoading } = useParkingSpots();
+  const { activeBooking } = useBookings();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
-  const [searchRadius, setSearchRadius] = useState(1); // 1 mile default
+  const [searchRadius, setSearchRadius] = useState(1);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const { location, loading: locationLoading, requestLocation } = useUserLocation();
 
-  const handleSpotClick = (spot: typeof parkingSpots[0]) => {
-    setSelectedSpot(spot);
-    navigate('/spot-details');
+  // Filter spots by amenities and search query
+  const filteredSpots = useMemo(() => {
+    return parkingSpots.filter(spot => {
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (!spot.name.toLowerCase().includes(query) && 
+            !spot.address.toLowerCase().includes(query)) {
+          return false;
+        }
+      }
+
+      // Filter by amenities
+      if (selectedAmenities.length > 0) {
+        const hasAllAmenities = selectedAmenities.every(amenity => 
+          spot.amenities.includes(amenity)
+        );
+        if (!hasAllAmenities) return false;
+      }
+
+      return true;
+    });
+  }, [parkingSpots, searchQuery, selectedAmenities]);
+
+  const selectedSpot = useMemo(() => {
+    return filteredSpots.find(s => s.id === selectedMarkerId);
+  }, [filteredSpots, selectedMarkerId]);
+
+  const handleSpotClick = (spot: ParkingSpot) => {
+    navigate('/spot-details', { state: { spot } });
   };
 
   const handleSpotSelect = (spotId: string) => {
     setSelectedMarkerId(spotId);
-    const spot = parkingSpots.find(s => s.id === spotId);
-    if (spot) {
-      setSelectedSpot(spot);
-    }
   };
 
-  const handleNavigateToSpot = (spot: typeof parkingSpots[0]) => {
-    // Open in Google Maps or Apple Maps for navigation
+  const handleNavigateToSpot = (spot: ParkingSpot) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}&travelmode=driving`;
     window.open(url, '_blank');
+  };
+
+  const handleFavoriteClick = async (e: React.MouseEvent, spotId: string) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+    await toggleFavorite(spotId);
   };
 
   const getAvailabilityColor = (available: number, total: number) => {
@@ -90,8 +131,18 @@ const MapDashboard = () => {
               className="pl-12 h-14 bg-card border-border rounded-xl text-foreground placeholder:text-muted-foreground"
             />
           </div>
-          <Button variant="secondary" size="icon" className="h-14 w-14 rounded-xl">
+          <Button 
+            variant={selectedAmenities.length > 0 ? 'default' : 'secondary'} 
+            size="icon" 
+            className="h-14 w-14 rounded-xl relative"
+            onClick={() => setIsFilterOpen(true)}
+          >
             <Filter className="w-5 h-5" />
+            {selectedAmenities.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs rounded-full flex items-center justify-center">
+                {selectedAmenities.length}
+              </span>
+            )}
           </Button>
         </div>
 
@@ -109,16 +160,34 @@ const MapDashboard = () => {
             </Button>
           ))}
         </div>
+
+        {/* Active filters display */}
+        {selectedAmenities.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {selectedAmenities.map(amenity => (
+              <span key={amenity} className="px-3 py-1 bg-primary/20 text-primary text-xs rounded-full">
+                {amenity}
+              </span>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Map */}
       <div className="flex-1 relative mx-4 rounded-2xl overflow-hidden">
-        <MapView
-          userLocation={location}
-          onSpotSelect={handleSpotSelect}
-          selectedSpotId={selectedMarkerId}
-          searchRadius={searchRadius}
-        />
+        {spotsLoading ? (
+          <div className="w-full h-full flex items-center justify-center bg-secondary/30 rounded-2xl">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        ) : (
+          <MapView
+            userLocation={location}
+            onSpotSelect={handleSpotSelect}
+            selectedSpotId={selectedMarkerId}
+            searchRadius={searchRadius}
+            spots={filteredSpots}
+          />
+        )}
 
         {/* Locate me button */}
         <Button
@@ -153,6 +222,11 @@ const MapDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Results count */}
+        <div className="absolute top-4 right-4 glass rounded-xl px-3 py-2 z-10">
+          <span className="text-xs text-muted-foreground">{filteredSpots.length} spots</span>
+        </div>
       </div>
 
       {/* Active booking banner */}
@@ -171,11 +245,11 @@ const MapDashboard = () => {
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm text-muted-foreground">Active Booking</p>
-              <p className="font-semibold text-foreground">{activeBooking.spot.name}</p>
+              <p className="font-semibold text-foreground">{activeBooking.spot?.name}</p>
             </div>
             <div className="text-right">
-              <p className="text-primary font-bold">02:45:30</p>
-              <p className="text-xs text-muted-foreground">remaining</p>
+              <p className="text-primary font-bold">Active</p>
+              <p className="text-xs text-muted-foreground">{activeBooking.booking_code}</p>
             </div>
           </button>
         </motion.div>
@@ -183,70 +257,74 @@ const MapDashboard = () => {
 
       {/* Selected spot card */}
       <AnimatePresence>
-        {selectedMarkerId && (
+        {selectedSpot && (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             className="mx-4 mt-4"
           >
-            {parkingSpots
-              .filter((spot) => spot.id === selectedMarkerId)
-              .map((spot) => (
-                <div
-                  key={spot.id}
-                  className="w-full glass rounded-2xl p-4 shadow-card"
-                >
-                  <div className="flex gap-4">
-                    <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center">
-                      <MapPin className="w-8 h-8 text-primary" />
+            <div className="w-full glass rounded-2xl p-4 shadow-card">
+              <div className="flex gap-4">
+                <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center relative">
+                  <MapPin className="w-8 h-8 text-primary" />
+                  <button
+                    onClick={(e) => handleFavoriteClick(e, selectedSpot.id)}
+                    className="absolute -top-2 -right-2 w-8 h-8 bg-card rounded-full flex items-center justify-center shadow-md"
+                  >
+                    <Heart 
+                      className={`w-4 h-4 ${isFavorite(selectedSpot.id) ? 'text-destructive fill-destructive' : 'text-muted-foreground'}`} 
+                    />
+                  </button>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold text-foreground">{selectedSpot.name}</h3>
+                      <p className="text-sm text-muted-foreground">{selectedSpot.address}</p>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-bold text-foreground">{spot.name}</h3>
-                          <p className="text-sm text-muted-foreground">{spot.address}</p>
-                        </div>
-                        <div className="flex items-center gap-1 bg-secondary px-2 py-1 rounded-lg">
-                          <Star className="w-4 h-4 text-warning fill-warning" />
-                          <span className="text-sm font-medium text-foreground">{spot.rating}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 mt-3">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">{spot.distance}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full ${getAvailabilityColor(spot.available, spot.total)}`} />
-                          <span className="text-sm text-muted-foreground">{spot.available} spots</span>
-                        </div>
-                        <div className="ml-auto">
-                          <span className="text-xl font-bold text-primary">${spot.price.toFixed(2)}</span>
-                          <span className="text-muted-foreground text-sm">/hr</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-1 bg-secondary px-2 py-1 rounded-lg">
+                      <Star className="w-4 h-4 text-warning fill-warning" />
+                      <span className="text-sm font-medium text-foreground">{selectedSpot.rating}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      variant="secondary"
-                      className="flex-1 rounded-xl"
-                      onClick={() => handleNavigateToSpot(spot)}
-                    >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      Navigate
-                    </Button>
-                    <Button
-                      className="flex-1 rounded-xl"
-                      onClick={() => handleSpotClick(spot)}
-                      disabled={spot.available === 0}
-                    >
-                      {spot.available === 0 ? 'Full' : 'Book Now'}
-                    </Button>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {selectedSpot.amenities.slice(0, 3).map(amenity => (
+                      <span key={amenity} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                        {amenity}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-1">
+                      <div className={`w-2 h-2 rounded-full ${getAvailabilityColor(selectedSpot.available, selectedSpot.total)}`} />
+                      <span className="text-sm text-muted-foreground">{selectedSpot.available} spots</span>
+                    </div>
+                    <div className="ml-auto">
+                      <span className="text-xl font-bold text-primary">${selectedSpot.price.toFixed(2)}</span>
+                      <span className="text-muted-foreground text-sm">/hr</span>
+                    </div>
                   </div>
                 </div>
-              ))}
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant="secondary"
+                  className="flex-1 rounded-xl"
+                  onClick={() => handleNavigateToSpot(selectedSpot)}
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Navigate
+                </Button>
+                <Button
+                  className="flex-1 rounded-xl"
+                  onClick={() => handleSpotClick(selectedSpot)}
+                  disabled={selectedSpot.available === 0}
+                >
+                  {selectedSpot.available === 0 ? 'Full' : 'Book Now'}
+                </Button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -255,6 +333,14 @@ const MapDashboard = () => {
       <div className="h-24" />
 
       <BottomNav />
+
+      {/* Filter Modal */}
+      <AmenityFilter
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        selectedAmenities={selectedAmenities}
+        onAmenitiesChange={setSelectedAmenities}
+      />
     </div>
   );
 };
