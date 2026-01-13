@@ -1,21 +1,39 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Navigation, Filter, Menu, Bell, Star, Clock, Zap } from 'lucide-react';
+import { Search, MapPin, Navigation, Filter, Menu, Bell, Star, Clock, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApp } from '@/contexts/AppContext';
 import BottomNav from '@/components/BottomNav';
+import MapView from '@/components/MapView';
+import { useUserLocation } from '@/hooks/useUserLocation';
 
 const MapDashboard = () => {
   const navigate = useNavigate();
   const { parkingSpots, setSelectedSpot, activeBooking } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const [searchRadius, setSearchRadius] = useState(1); // 1 mile default
+  const { location, loading: locationLoading, requestLocation } = useUserLocation();
 
   const handleSpotClick = (spot: typeof parkingSpots[0]) => {
     setSelectedSpot(spot);
     navigate('/spot-details');
+  };
+
+  const handleSpotSelect = (spotId: string) => {
+    setSelectedMarkerId(spotId);
+    const spot = parkingSpots.find(s => s.id === spotId);
+    if (spot) {
+      setSelectedSpot(spot);
+    }
+  };
+
+  const handleNavigateToSpot = (spot: typeof parkingSpots[0]) => {
+    // Open in Google Maps or Apple Maps for navigation
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}&travelmode=driving`;
+    window.open(url, '_blank');
   };
 
   const getAvailabilityColor = (available: number, total: number) => {
@@ -23,6 +41,12 @@ const MapDashboard = () => {
     if (ratio > 0.5) return 'bg-success';
     if (ratio > 0.2) return 'bg-warning';
     return 'bg-destructive';
+  };
+
+  const getLocationDisplay = () => {
+    if (locationLoading) return 'Getting location...';
+    if (location) return 'Current Location';
+    return 'Location unavailable';
   };
 
   return (
@@ -37,8 +61,12 @@ const MapDashboard = () => {
           <div>
             <p className="text-muted-foreground text-sm">Your Location</p>
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-foreground">Downtown, NYC</span>
+              {locationLoading ? (
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              ) : (
+                <MapPin className="w-4 h-4 text-primary" />
+              )}
+              <span className="font-semibold text-foreground">{getLocationDisplay()}</span>
             </div>
           </div>
           <div className="flex gap-2">
@@ -66,75 +94,65 @@ const MapDashboard = () => {
             <Filter className="w-5 h-5" />
           </Button>
         </div>
+
+        {/* Radius selector */}
+        <div className="flex gap-2 mt-3">
+          {[0.5, 1, 2, 5].map((radius) => (
+            <Button
+              key={radius}
+              variant={searchRadius === radius ? 'default' : 'secondary'}
+              size="sm"
+              className="rounded-full text-xs"
+              onClick={() => setSearchRadius(radius)}
+            >
+              {radius} mi
+            </Button>
+          ))}
+        </div>
       </motion.div>
 
-      {/* Map placeholder */}
-      <div className="flex-1 relative bg-secondary/30 mx-4 rounded-2xl overflow-hidden">
-        {/* Simulated map */}
-        <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 to-secondary/20">
-          {/* Grid pattern for map simulation */}
-          <div className="absolute inset-0 opacity-20" style={{
-            backgroundImage: `
-              linear-gradient(hsl(var(--border)) 1px, transparent 1px),
-              linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px'
-          }} />
-          
-          {/* Parking markers */}
-          {parkingSpots.map((spot, index) => (
-            <motion.button
-              key={spot.id}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              onClick={() => {
-                setSelectedMarkerId(spot.id);
-                setSelectedSpot(spot);
-              }}
-              className={`absolute transform -translate-x-1/2 -translate-y-1/2 ${
-                selectedMarkerId === spot.id ? 'z-20' : 'z-10'
-              }`}
-              style={{
-                left: `${20 + index * 20}%`,
-                top: `${30 + (index % 2) * 30}%`,
-              }}
-            >
-              <div className={`relative ${selectedMarkerId === spot.id ? 'scale-125' : ''} transition-transform`}>
-                <div className={`px-3 py-2 rounded-xl font-bold text-sm shadow-lg ${
-                  selectedMarkerId === spot.id 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-card text-foreground border border-border'
-                }`}>
-                  ${spot.price.toFixed(2)}/hr
-                </div>
-                <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 ${
-                  selectedMarkerId === spot.id ? 'bg-primary' : 'bg-card border-b border-r border-border'
-                }`} />
-                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getAvailabilityColor(spot.available, spot.total)}`} />
-              </div>
-            </motion.button>
-          ))}
-
-          {/* User location */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-primary/20 animate-ping absolute" />
-              <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center">
-                <Navigation className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Map */}
+      <div className="flex-1 relative mx-4 rounded-2xl overflow-hidden">
+        <MapView
+          userLocation={location}
+          onSpotSelect={handleSpotSelect}
+          selectedSpotId={selectedMarkerId}
+          searchRadius={searchRadius}
+        />
 
         {/* Locate me button */}
         <Button
           variant="glass"
           size="icon"
-          className="absolute bottom-4 right-4 h-12 w-12 rounded-xl shadow-lg"
+          className="absolute bottom-4 right-4 h-12 w-12 rounded-xl shadow-lg z-10"
+          onClick={requestLocation}
+          disabled={locationLoading}
         >
-          <Navigation className="w-5 h-5" />
+          {locationLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Navigation className="w-5 h-5" />
+          )}
         </Button>
+
+        {/* Legend */}
+        <div className="absolute top-4 left-4 glass rounded-xl p-3 z-10">
+          <p className="text-xs font-medium text-foreground mb-2">Availability</p>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-success" />
+              <span className="text-xs text-muted-foreground">Available</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-warning" />
+              <span className="text-xs text-muted-foreground">Limited</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-destructive" />
+              <span className="text-xs text-muted-foreground">Full</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Active booking banner */}
@@ -175,10 +193,9 @@ const MapDashboard = () => {
             {parkingSpots
               .filter((spot) => spot.id === selectedMarkerId)
               .map((spot) => (
-                <button
+                <div
                   key={spot.id}
-                  onClick={() => handleSpotClick(spot)}
-                  className="w-full glass rounded-2xl p-4 shadow-card text-left"
+                  className="w-full glass rounded-2xl p-4 shadow-card"
                 >
                   <div className="flex gap-4">
                     <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center">
@@ -201,7 +218,7 @@ const MapDashboard = () => {
                           <span className="text-sm text-muted-foreground">{spot.distance}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Zap className="w-4 h-4 text-primary" />
+                          <div className={`w-2 h-2 rounded-full ${getAvailabilityColor(spot.available, spot.total)}`} />
                           <span className="text-sm text-muted-foreground">{spot.available} spots</span>
                         </div>
                         <div className="ml-auto">
@@ -211,7 +228,24 @@ const MapDashboard = () => {
                       </div>
                     </div>
                   </div>
-                </button>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="secondary"
+                      className="flex-1 rounded-xl"
+                      onClick={() => handleNavigateToSpot(spot)}
+                    >
+                      <Navigation className="w-4 h-4 mr-2" />
+                      Navigate
+                    </Button>
+                    <Button
+                      className="flex-1 rounded-xl"
+                      onClick={() => handleSpotClick(spot)}
+                      disabled={spot.available === 0}
+                    >
+                      {spot.available === 0 ? 'Full' : 'Book Now'}
+                    </Button>
+                  </div>
+                </div>
               ))}
           </motion.div>
         )}
