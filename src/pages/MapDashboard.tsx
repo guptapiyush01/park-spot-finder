@@ -25,7 +25,7 @@ const MapDashboard = () => {
   const [searchRadius, setSearchRadius] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const { location, loading: locationLoading, requestLocation } = useUserLocation();
+  const { location, loading: locationLoading, requestLocation, isTracking, startTracking, stopTracking } = useUserLocation();
 
   // Filter spots by amenities and search query
   const filteredSpots = useMemo(() => {
@@ -186,23 +186,14 @@ const MapDashboard = () => {
             selectedSpotId={selectedMarkerId}
             searchRadius={searchRadius}
             spots={filteredSpots}
+            isTracking={isTracking}
+            onStartTracking={startTracking}
+            onStopTracking={stopTracking}
+            onCenterUser={requestLocation}
           />
         )}
 
-        {/* Locate me button */}
-        <Button
-          variant="glass"
-          size="icon"
-          className="absolute bottom-4 right-4 h-12 w-12 rounded-xl shadow-lg z-10"
-          onClick={requestLocation}
-          disabled={locationLoading}
-        >
-          {locationLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Navigation className="w-5 h-5" />
-          )}
-        </Button>
+        {/* The locate button is now inside MapView */}
 
         {/* Legend */}
         <div className="absolute top-4 left-4 glass rounded-xl p-3 z-10">
