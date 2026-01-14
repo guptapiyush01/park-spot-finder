@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { ParkingSpot } from '@/hooks/useParkingSpots';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
@@ -19,6 +21,12 @@ const MapView = ({ userLocation, onSpotSelect, selectedSpotId, searchRadius = 1,
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Mapbox token can be provided via VITE_MAPBOX_ACCESS_TOKEN (preferred) or entered once and stored locally.
+  const [mapboxToken, setMapboxToken] = useState<string>(() => {
+    return MAPBOX_TOKEN || localStorage.getItem('mapbox_access_token') || '';
+  });
+  const [tokenDraft, setTokenDraft] = useState('');
 
   // Calculate distance between two points in miles
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -57,11 +65,12 @@ const MapView = ({ userLocation, onSpotSelect, selectedSpotId, searchRadius = 1,
 
   // Initialize map
   useEffect(() => {
+    if (!mapboxToken) return;
     if (!mapContainer.current || map.current) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    mapboxgl.accessToken = mapboxToken;
 
-    const initialCenter: [number, number] = userLocation 
+    const initialCenter: [number, number] = userLocation
       ? [userLocation.longitude, userLocation.latitude]
       : [-74.0060, 40.7128];
 
@@ -82,7 +91,7 @@ const MapView = ({ userLocation, onSpotSelect, selectedSpotId, searchRadius = 1,
       map.current?.remove();
       map.current = null;
     };
-  }, []);
+  }, [mapboxToken, userLocation]);
 
   // Update user location marker
   useEffect(() => {
@@ -287,9 +296,46 @@ const MapView = ({ userLocation, onSpotSelect, selectedSpotId, searchRadius = 1,
     }
   }, [selectedSpotId, mapLoaded, spots]);
 
+  if (!mapboxToken) {
+    return (
+      <div className="w-full h-full rounded-2xl overflow-hidden min-h-[300px] flex items-center justify-center bg-background border border-border p-6">
+        <div className="w-full max-w-md space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-foreground">Map setup</h2>
+            <p className="text-sm text-muted-foreground">
+              Enter your Mapbox public access token to load the map.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={tokenDraft}
+              onChange={(e) => setTokenDraft(e.target.value)}
+              placeholder="pk.eyJ1Ijo..."
+              autoComplete="off"
+            />
+            <Button
+              type="button"
+              onClick={() => {
+                const next = tokenDraft.trim();
+                if (!next) return;
+                localStorage.setItem('mapbox_access_token', next);
+                setMapboxToken(next);
+              }}
+            >
+              Save
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Stored only in this browser (localStorage).
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div 
-      ref={mapContainer} 
+    <div
+      ref={mapContainer}
       className="w-full h-full rounded-2xl overflow-hidden"
       style={{ minHeight: '300px' }}
     />
