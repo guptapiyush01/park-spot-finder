@@ -19,16 +19,16 @@ const MapView = ({
   userLocation, 
   onSpotSelect, 
   selectedSpotId, 
-  searchRadius = 1, 
+  searchRadius = 5, // Increased default for km
   spots,
   isTracking = false,
   onCenterUser,
 }: MapViewProps) => {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
-  // Calculate distance between two points in miles
+  // Calculate distance between two points in km
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 3959;
+    const R = 6371; // Earth's radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
     const a = 
@@ -72,10 +72,10 @@ const MapView = ({
     return 'text-destructive';
   };
 
-  // Format distance for display
-  const formatDistance = (miles: number): string => {
-    if (miles < 0.1) return `${Math.round(miles * 5280)} ft`;
-    return `${miles.toFixed(1)} mi`;
+  // Format distance for display (in km/m for India)
+  const formatDistance = (km: number): string => {
+    if (km < 1) return `${Math.round(km * 1000)} m`;
+    return `${km.toFixed(1)} km`;
   };
 
   const amenityIcons: Record<string, React.ReactNode> = {
@@ -95,30 +95,17 @@ const MapView = ({
     );
   };
 
-  // Generate Google Maps embed URL with markers
-  const getGoogleMapsEmbedUrl = () => {
+  // Generate OpenStreetMap embed URL (free, no API key needed)
+  const getOpenStreetMapEmbedUrl = () => {
     if (!userLocation) return '';
     
-    const center = `${userLocation.latitude},${userLocation.longitude}`;
-    const zoom = 14;
+    const lat = userLocation.latitude;
+    const lng = userLocation.longitude;
+    // OpenStreetMap embed with bounding box around the location
+    const delta = 0.015; // ~1.5km view
+    const bbox = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`;
     
-    // Create a static map URL showing the area
-    // Using embed mode with place to show the user's location area
-    return `https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${center}&zoom=${zoom}&maptype=roadmap`;
-  };
-
-  // Generate static map with markers for all spots
-  const getStaticMapUrl = () => {
-    if (!userLocation) return '';
-    
-    const center = `${userLocation.latitude},${userLocation.longitude}`;
-    const markers = spotsWithDistance.slice(0, 10).map((spot, index) => 
-      `markers=color:red%7Clabel:${index + 1}%7C${spot.lat},${spot.lng}`
-    ).join('&');
-    
-    const userMarker = `markers=color:blue%7Clabel:U%7C${userLocation.latitude},${userLocation.longitude}`;
-    
-    return `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=14&size=600x400&maptype=roadmap&${userMarker}&${markers}&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8`;
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
   };
 
   return (
@@ -173,7 +160,7 @@ const MapView = ({
 
       {/* Content area */}
       {viewMode === 'map' ? (
-        /* Google Maps embed view */
+        /* OpenStreetMap embed view */
         <div className="flex-1 flex flex-col overflow-hidden">
           {userLocation ? (
             <>
@@ -181,8 +168,7 @@ const MapView = ({
                 <iframe
                   className="absolute inset-0 w-full h-full border-0"
                   loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={getGoogleMapsEmbedUrl()}
+                  src={getOpenStreetMapEmbedUrl()}
                   allowFullScreen
                 />
                 {/* Overlay with spot markers legend */}
@@ -205,7 +191,7 @@ const MapView = ({
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{spot.name}</p>
                           <p className="text-[10px] text-muted-foreground">
-                            {spot.distance !== null ? formatDistance(spot.distance) : ''} • ${spot.price}/hr
+                            {spot.distance !== null ? formatDistance(spot.distance) : ''} • ₹{spot.price}/hr
                           </p>
                         </div>
                         <Button
@@ -315,7 +301,7 @@ const MapView = ({
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-primary">${spot.price.toFixed(2)}</span>
+                          <span className="text-lg font-bold text-primary">₹{spot.price.toFixed(0)}</span>
                           <span className="text-xs text-muted-foreground">/hr</span>
                         </div>
                       </div>
@@ -344,7 +330,7 @@ const MapView = ({
       <div className="p-3 bg-secondary/50 rounded-b-2xl border-t border-border">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            {spotsWithDistance.length} spots within {searchRadius} mi
+            {spotsWithDistance.length} spots within {searchRadius} km
           </span>
           {spotsWithDistance.length > 0 && (
             <span className="text-muted-foreground">
