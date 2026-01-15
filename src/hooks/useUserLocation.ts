@@ -48,10 +48,10 @@ export const useUserLocation = (): UseUserLocationReturn => {
       (err) => {
         setError(err.message);
         setLoading(false);
-        // Fallback to NYC coordinates
+        // Fallback to Chandigarh, India coordinates
         setLocation({
-          latitude: 40.7128,
-          longitude: -74.0060,
+          latitude: 30.7333,
+          longitude: 76.7794,
         });
       },
       {
