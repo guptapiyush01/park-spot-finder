@@ -1,58 +1,44 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Clock, CheckCircle2, XCircle, Calendar } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, CheckCircle2, XCircle, Calendar, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useApp } from '@/contexts/AppContext';
+import { useBookings } from '@/hooks/useBookings';
 import BottomNav from '@/components/BottomNav';
-
-const mockHistory = [
-  {
-    id: '1',
-    spotName: 'Downtown Central Parking',
-    address: '123 Main Street',
-    date: 'Jan 10, 2026',
-    time: '10:00 AM - 12:00 PM',
-    duration: 2,
-    totalPrice: 7.50,
-    status: 'completed' as const,
-  },
-  {
-    id: '2',
-    spotName: 'City Mall Parking',
-    address: '456 Shopping Ave',
-    date: 'Jan 8, 2026',
-    time: '2:00 PM - 4:00 PM',
-    duration: 2,
-    totalPrice: 4.50,
-    status: 'completed' as const,
-  },
-  {
-    id: '3',
-    spotName: 'Metro Station Garage',
-    address: '789 Transit Blvd',
-    date: 'Jan 5, 2026',
-    time: '9:00 AM - 11:00 AM',
-    duration: 2,
-    totalPrice: 8.50,
-    status: 'cancelled' as const,
-  },
-  {
-    id: '4',
-    spotName: 'Harbor View Parking',
-    address: '321 Waterfront Dr',
-    date: 'Jan 3, 2026',
-    time: '6:00 PM - 10:00 PM',
-    duration: 4,
-    totalPrice: 20.50,
-    status: 'completed' as const,
-  },
-];
+import { format } from 'date-fns';
 
 const BookingHistory = () => {
   const navigate = useNavigate();
-  const { bookings } = useApp();
+  const { bookings, isLoading } = useBookings();
 
-  const allBookings = [...bookings.filter(b => b.status !== 'active'), ...mockHistory];
+  // Filter out active bookings - show only completed and cancelled
+  const historyBookings = bookings.filter(b => b.status !== 'active');
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return format(new Date(dateStr), 'MMM d, yyyy');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatTime = (timeStr: string) => {
+    try {
+      const [hours, minutes] = timeStr.split(':');
+      const date = new Date();
+      date.setHours(parseInt(hours), parseInt(minutes));
+      return format(date, 'h:mm a');
+    } catch {
+      return timeStr;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-24">
@@ -69,7 +55,7 @@ const BookingHistory = () => {
         animate={{ y: 0, opacity: 1 }}
         className="flex-1 px-4"
       >
-        {allBookings.length === 0 ? (
+        {historyBookings.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
               <Calendar className="w-10 h-10 text-muted-foreground" />
@@ -80,7 +66,7 @@ const BookingHistory = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {allBookings.map((booking, index) => (
+            {historyBookings.map((booking, index) => (
               <motion.div
                 key={booking.id}
                 initial={{ x: -50, opacity: 0 }}
@@ -96,10 +82,10 @@ const BookingHistory = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <h3 className="font-bold text-foreground truncate">
-                          {'spotName' in booking ? booking.spotName : booking.spot.name}
+                          {booking.spot?.name ?? 'Unknown Spot'}
                         </h3>
                         <p className="text-sm text-muted-foreground truncate">
-                          {'address' in booking ? booking.address : booking.spot.address}
+                          {booking.spot?.address ?? 'No address'}
                         </p>
                       </div>
                       <div className={`flex items-center gap-1 px-2 py-1 rounded-lg flex-shrink-0 ${
@@ -119,19 +105,19 @@ const BookingHistory = () => {
                     <div className="flex items-center gap-4 mt-3">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{booking.date}</span>
+                        <span className="text-sm text-muted-foreground">{formatDate(booking.date)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">
-                          {'time' in booking ? booking.time : `${booking.startTime} - ${booking.endTime}`}
+                          {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
                         </span>
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                       <span className="text-sm text-muted-foreground">{booking.duration} hours</span>
-                      <span className="font-bold text-primary">${booking.totalPrice.toFixed(2)}</span>
+                      <span className="font-bold text-primary">₹{booking.total_price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
