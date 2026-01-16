@@ -1,17 +1,22 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Navigation, Filter, Menu, Bell, Star, Clock, Zap, Loader2, Heart } from 'lucide-react';
+import { Search, MapPin, Navigation, Filter, Menu, Bell, Star, Clock, Zap, Loader2, Heart, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import BottomNav from '@/components/BottomNav';
 import MapView from '@/components/MapView';
 import AmenityFilter from '@/components/AmenityFilter';
+import LocationPicker from '@/components/LocationPicker';
+import NotificationPanel from '@/components/NotificationPanel';
+import SideMenu from '@/components/SideMenu';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { useParkingSpots, ParkingSpot } from '@/hooks/useParkingSpots';
 import { useBookings } from '@/hooks/useBookings';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useLocationPreferences } from '@/hooks/useLocationPreferences';
 
 const MapDashboard = () => {
   const navigate = useNavigate();
@@ -19,12 +24,17 @@ const MapDashboard = () => {
   const { data: parkingSpots = [], isLoading: spotsLoading } = useParkingSpots();
   const { activeBooking } = useBookings();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { unreadCount } = useNotifications();
+  const { selectedLocation, setLocation, clearLocation } = useLocationPreferences();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [searchRadius, setSearchRadius] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const { location, loading: locationLoading, requestLocation, isTracking, startTracking, stopTracking } = useUserLocation();
 
   // Filter spots by amenities and search query
@@ -85,9 +95,15 @@ const MapDashboard = () => {
   };
 
   const getLocationDisplay = () => {
+    if (selectedLocation) return selectedLocation.city;
     if (locationLoading) return 'Getting location...';
     if (location) return 'Current Location';
-    return 'Location unavailable';
+    return 'Select Location';
+  };
+
+  const handleUseCurrentLocation = () => {
+    clearLocation();
+    requestLocation();
   };
 
   return (
@@ -99,7 +115,10 @@ const MapDashboard = () => {
         className="px-4 pt-6 pb-4 relative z-20"
       >
         <div className="flex items-center justify-between mb-4">
-          <div>
+          <button 
+            onClick={() => setIsLocationPickerOpen(true)}
+            className="text-left"
+          >
             <p className="text-muted-foreground text-sm">Your Location</p>
             <div className="flex items-center gap-2">
               {locationLoading ? (
@@ -108,13 +127,29 @@ const MapDashboard = () => {
                 <MapPin className="w-4 h-4 text-primary" />
               )}
               <span className="font-semibold text-foreground">{getLocationDisplay()}</span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </div>
-          </div>
+          </button>
           <div className="flex gap-2">
-            <Button variant="glass" size="icon" className="rounded-xl">
+            <Button 
+              variant="glass" 
+              size="icon" 
+              className="rounded-xl relative"
+              onClick={() => setIsNotificationOpen(true)}
+            >
               <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Button>
-            <Button variant="glass" size="icon" className="rounded-xl">
+            <Button 
+              variant="glass" 
+              size="icon" 
+              className="rounded-xl"
+              onClick={() => setIsSideMenuOpen(true)}
+            >
               <Menu className="w-5 h-5" />
             </Button>
           </div>
@@ -331,6 +366,27 @@ const MapDashboard = () => {
         onClose={() => setIsFilterOpen(false)}
         selectedAmenities={selectedAmenities}
         onAmenitiesChange={setSelectedAmenities}
+      />
+
+      {/* Location Picker */}
+      <LocationPicker
+        isOpen={isLocationPickerOpen}
+        onClose={() => setIsLocationPickerOpen(false)}
+        selectedLocation={selectedLocation}
+        onLocationSelect={setLocation}
+        onUseCurrentLocation={handleUseCurrentLocation}
+      />
+
+      {/* Notification Panel */}
+      <NotificationPanel
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+      />
+
+      {/* Side Menu */}
+      <SideMenu
+        isOpen={isSideMenuOpen}
+        onClose={() => setIsSideMenuOpen(false)}
       />
     </div>
   );
