@@ -106,11 +106,45 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       parking_spots: {
         Row: {
           address: string
           amenities: string[] | null
           available: number
+          city: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -125,6 +159,7 @@ export type Database = {
           address: string
           amenities?: string[] | null
           available?: number
+          city?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -139,6 +174,7 @@ export type Database = {
           address?: string
           amenities?: string[] | null
           available?: number
+          city?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -179,6 +215,33 @@ export type Database = {
           id?: string
           name?: string | null
           phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          selected_city: string | null
+          selected_state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          selected_city?: string | null
+          selected_state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          selected_city?: string | null
+          selected_state?: string | null
           updated_at?: string
           user_id?: string
         }
