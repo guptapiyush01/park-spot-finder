@@ -40,7 +40,23 @@ const AuthScreen = () => {
       }
       navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.message || 'Authentication failed');
+      // Sanitize error messages to prevent information leakage
+      let userMessage = 'Authentication failed. Please try again.';
+      const errorMsg = error.message?.toLowerCase() || '';
+      
+      if (errorMsg.includes('invalid login') || errorMsg.includes('invalid password') || errorMsg.includes('invalid email')) {
+        userMessage = 'Invalid email or password.';
+      } else if (errorMsg.includes('email not confirmed')) {
+        userMessage = 'Please confirm your email address.';
+      } else if (errorMsg.includes('rate limit') || errorMsg.includes('too many')) {
+        userMessage = 'Too many attempts. Please try again later.';
+      } else if (errorMsg.includes('already registered') || errorMsg.includes('already exists')) {
+        userMessage = 'An account with this email already exists.';
+      } else if (errorMsg.includes('weak password') || errorMsg.includes('password')) {
+        userMessage = 'Password must be at least 6 characters.';
+      }
+      
+      toast.error(userMessage);
     } finally {
       setIsLoading(false);
     }
