@@ -73,7 +73,7 @@ export const useBookings = () => {
     }) => {
       if (!user) throw new Error('Not authenticated');
       
-      const bookingCode = `PK${Date.now().toString(36).toUpperCase()}`;
+      const bookingCode = `PK${crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`;
       
       const { data, error } = await supabase
         .from('bookings')
