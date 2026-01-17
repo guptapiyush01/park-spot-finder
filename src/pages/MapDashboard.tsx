@@ -107,12 +107,13 @@ const MapDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-20">
       {/* Header */}
       <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="px-4 pt-6 pb-4 relative z-20"
+        className="px-4 pt-safe pb-4 relative z-20 bg-background"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 24px)' }}
       >
         <div className="flex items-center justify-between mb-4">
           <button 
@@ -209,7 +210,7 @@ const MapDashboard = () => {
       </motion.div>
 
       {/* Map */}
-      <div className="flex-1 relative mx-4 rounded-2xl overflow-hidden">
+      <div className="flex-1 relative mx-4 rounded-2xl overflow-hidden min-h-[300px]">
         {spotsLoading ? (
           <div className="w-full h-full flex items-center justify-center bg-secondary/30 rounded-2xl">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -260,14 +261,14 @@ const MapDashboard = () => {
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="mx-4 mt-4"
+          className="mx-4 mt-3 shrink-0"
         >
           <button
             onClick={() => navigate('/active-booking')}
-            className="w-full glass rounded-xl p-4 flex items-center gap-4 shadow-glow border-primary/50"
+            className="w-full glass rounded-xl p-3 flex items-center gap-3 shadow-glow border-primary/50"
           >
-            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Clock className="w-6 h-6 text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm text-muted-foreground">Active Booking</p>
@@ -288,62 +289,57 @@ const MapDashboard = () => {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="mx-4 mt-4"
+            className="mx-4 mt-3 shrink-0"
           >
-            <div className="w-full glass rounded-2xl p-4 shadow-card">
-              <div className="flex gap-4">
-                <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center relative">
-                  <MapPin className="w-8 h-8 text-primary" />
+            <div className="w-full glass rounded-2xl p-3 shadow-card">
+              <div className="flex gap-3">
+                <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center relative shrink-0">
+                  <MapPin className="w-6 h-6 text-primary" />
                   <button
                     onClick={(e) => handleFavoriteClick(e, selectedSpot.id)}
-                    className="absolute -top-2 -right-2 w-8 h-8 bg-card rounded-full flex items-center justify-center shadow-md"
+                    className="absolute -top-1 -right-1 w-6 h-6 bg-card rounded-full flex items-center justify-center shadow-md"
                   >
                     <Heart 
-                      className={`w-4 h-4 ${isFavorite(selectedSpot.id) ? 'text-destructive fill-destructive' : 'text-muted-foreground'}`} 
+                      className={`w-3 h-3 ${isFavorite(selectedSpot.id) ? 'text-destructive fill-destructive' : 'text-muted-foreground'}`} 
                     />
                   </button>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-foreground">{selectedSpot.name}</h3>
-                      <p className="text-sm text-muted-foreground">{selectedSpot.address}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-foreground text-sm truncate">{selectedSpot.name}</h3>
+                      <p className="text-xs text-muted-foreground truncate">{selectedSpot.address}</p>
                     </div>
-                    <div className="flex items-center gap-1 bg-secondary px-2 py-1 rounded-lg">
-                      <Star className="w-4 h-4 text-warning fill-warning" />
-                      <span className="text-sm font-medium text-foreground">{selectedSpot.rating}</span>
+                    <div className="flex items-center gap-1 bg-secondary px-1.5 py-0.5 rounded-md shrink-0">
+                      <Star className="w-3 h-3 text-warning fill-warning" />
+                      <span className="text-xs font-medium text-foreground">{selectedSpot.rating}</span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {selectedSpot.amenities.slice(0, 3).map(amenity => (
-                      <span key={amenity} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                        {amenity}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center justify-between mt-1.5">
                     <div className="flex items-center gap-1">
                       <div className={`w-2 h-2 rounded-full ${getAvailabilityColor(selectedSpot.available, selectedSpot.total)}`} />
-                      <span className="text-sm text-muted-foreground">{selectedSpot.available} spots</span>
+                      <span className="text-xs text-muted-foreground">{selectedSpot.available} spots</span>
                     </div>
-                    <div className="ml-auto">
-                      <span className="text-xl font-bold text-primary">${selectedSpot.price.toFixed(2)}</span>
-                      <span className="text-muted-foreground text-sm">/hr</span>
+                    <div>
+                      <span className="text-base font-bold text-primary">₹{selectedSpot.price.toFixed(0)}</span>
+                      <span className="text-muted-foreground text-xs">/hr</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-2 mt-3">
                 <Button
                   variant="secondary"
-                  className="flex-1 rounded-xl"
+                  size="sm"
+                  className="flex-1 rounded-xl h-9"
                   onClick={() => handleNavigateToSpot(selectedSpot)}
                 >
-                  <Navigation className="w-4 h-4 mr-2" />
+                  <Navigation className="w-4 h-4 mr-1.5" />
                   Navigate
                 </Button>
                 <Button
-                  className="flex-1 rounded-xl"
+                  size="sm"
+                  className="flex-1 rounded-xl h-9"
                   onClick={() => handleSpotClick(selectedSpot)}
                   disabled={selectedSpot.available === 0}
                 >
@@ -356,7 +352,7 @@ const MapDashboard = () => {
       </AnimatePresence>
 
       {/* Bottom padding for nav */}
-      <div className="h-24" />
+      <div className="h-4 shrink-0" />
 
       <BottomNav />
 

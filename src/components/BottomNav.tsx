@@ -17,9 +17,10 @@ const BottomNav = () => {
     <motion.div
       initial={{ y: 100 }}
       animate={{ y: 0 }}
-      className="fixed bottom-0 left-0 right-0 glass-strong border-t border-border px-4 py-2 z-50"
+      className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border px-4 pb-safe z-50"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
     >
-      <div className="max-w-md mx-auto flex justify-around">
+      <div className="max-w-md mx-auto flex justify-around py-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (

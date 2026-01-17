@@ -111,7 +111,7 @@ const MapView = ({
   return (
     <div className="relative w-full h-full flex flex-col">
       {/* Header with location status and view toggle */}
-      <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-t-2xl border-b border-border">
+      <div className="flex items-center justify-between p-2 bg-secondary/50 rounded-t-2xl border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${userLocation ? 'bg-success animate-pulse' : 'bg-muted'}`} />
           <span className="text-sm text-muted-foreground">
@@ -172,7 +172,7 @@ const MapView = ({
                   allowFullScreen
                 />
                 {/* Overlay with spot markers legend */}
-                <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur-sm rounded-lg p-2 max-h-32 overflow-y-auto">
+                <div className="absolute bottom-2 left-2 right-2 bg-background/95 backdrop-blur-sm rounded-lg p-2 max-h-28 overflow-y-auto shadow-lg">
                   <p className="text-xs font-medium text-muted-foreground mb-2">
                     Nearby Parking ({spotsWithDistance.length})
                   </p>
@@ -222,7 +222,7 @@ const MapView = ({
         </div>
       ) : (
         /* List view */
-        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+        <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
           {spotsWithDistance.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
               <MapPin className="w-12 h-12 text-muted-foreground/50 mb-3" />
@@ -327,8 +327,8 @@ const MapView = ({
       )}
 
       {/* Summary footer */}
-      <div className="p-3 bg-secondary/50 rounded-b-2xl border-t border-border">
-        <div className="flex items-center justify-between text-sm">
+      <div className="p-2 bg-secondary/50 rounded-b-2xl border-t border-border shrink-0">
+        <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
             {spotsWithDistance.length} spots within {searchRadius} km
           </span>
