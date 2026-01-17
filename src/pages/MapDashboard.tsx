@@ -226,6 +226,7 @@ const MapDashboard = () => {
             onStartTracking={startTracking}
             onStopTracking={stopTracking}
             onCenterUser={requestLocation}
+            selectedCity={selectedLocation?.city}
           />
         )}
 
