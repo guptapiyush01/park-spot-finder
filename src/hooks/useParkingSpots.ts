@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useLocationPreferences } from './useLocationPreferences';
 
 export interface ParkingSpot {
   id: string;
   name: string;
   address: string;
+  city: string | null;
   price: number;
   lat: number;
   lng: number;
@@ -18,13 +20,22 @@ export interface ParkingSpot {
 }
 
 export const useParkingSpots = () => {
+  const { selectedLocation } = useLocationPreferences();
+
   return useQuery({
-    queryKey: ['parking-spots'],
+    queryKey: ['parking-spots', selectedLocation?.city, selectedLocation?.state],
     queryFn: async (): Promise<ParkingSpot[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('parking_spots')
         .select('*')
         .order('rating', { ascending: false });
+
+      // Filter by selected city if one is selected
+      if (selectedLocation?.city) {
+        query = query.ilike('city', `%${selectedLocation.city}%`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -34,7 +45,7 @@ export const useParkingSpots = () => {
         lat: Number(spot.lat),
         lng: Number(spot.lng),
         rating: Number(spot.rating),
-        distance: '0.5 mi', // Will be calculated client-side
+        distance: '0.5 km',
       }));
     },
   });

@@ -13,16 +13,18 @@ interface MapViewProps {
   onStartTracking?: () => void;
   onStopTracking?: () => void;
   onCenterUser?: () => void;
+  selectedCity?: string | null;
 }
 
 const MapView = ({ 
   userLocation, 
   onSpotSelect, 
   selectedSpotId, 
-  searchRadius = 5, // Increased default for km
+  searchRadius = 5,
   spots,
   isTracking = false,
   onCenterUser,
+  selectedCity,
 }: MapViewProps) => {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
@@ -226,9 +228,14 @@ const MapView = ({
           {spotsWithDistance.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
               <MapPin className="w-12 h-12 text-muted-foreground/50 mb-3" />
-              <p className="text-muted-foreground font-medium">No parking spots found</p>
+              <p className="text-muted-foreground font-medium">
+                {selectedCity ? `No parking spots in ${selectedCity}` : 'No parking spots found'}
+              </p>
               <p className="text-sm text-muted-foreground/70 mt-1">
-                Try increasing the search radius or check your location
+                {selectedCity 
+                  ? 'Try selecting a different city or add parking spots for this area'
+                  : 'Try increasing the search radius or select a location'
+                }
               </p>
             </div>
           ) : (
