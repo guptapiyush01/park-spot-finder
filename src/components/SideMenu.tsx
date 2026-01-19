@@ -81,6 +81,12 @@ const SideMenu = ({ isOpen, onClose }: SideMenuProps) => {
       badge: 'New',
     },
     {
+      icon: <MapPin className="w-5 h-5" />,
+      label: 'My Spots',
+      description: 'Manage your listings',
+      onClick: () => handleNavigation('/my-spots'),
+    },
+    {
       icon: <History className="w-5 h-5" />,
       label: 'Booking History',
       description: 'View past bookings',
