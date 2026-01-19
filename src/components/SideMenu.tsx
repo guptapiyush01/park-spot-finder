@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Moon,
   Sun,
+  PlusCircle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -71,6 +72,13 @@ const SideMenu = ({ isOpen, onClose }: SideMenuProps) => {
       label: 'My Profile',
       description: 'Manage your account',
       onClick: () => handleNavigation('/profile'),
+    },
+    {
+      icon: <PlusCircle className="w-5 h-5" />,
+      label: 'Add Parking Spot',
+      description: 'List your parking space',
+      onClick: () => handleNavigation('/add-spot'),
+      badge: 'New',
     },
     {
       icon: <History className="w-5 h-5" />,
