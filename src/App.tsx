@@ -17,6 +17,7 @@ import BookingHistory from "./pages/BookingHistory";
 import UserProfile from "./pages/UserProfile";
 import AddSpot from "./pages/AddSpot";
 import MySpots from "./pages/MySpots";
+import EarningsDashboard from "./pages/EarningsDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,7 @@ const App = () => (
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/add-spot" element={<AddSpot />} />
               <Route path="/my-spots" element={<MySpots />} />
+              <Route path="/earnings" element={<EarningsDashboard />} />
               <Route path="*" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
