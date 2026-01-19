@@ -19,6 +19,7 @@ import {
   Moon,
   Sun,
   PlusCircle,
+  BarChart3,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -85,6 +86,12 @@ const SideMenu = ({ isOpen, onClose }: SideMenuProps) => {
       label: 'My Spots',
       description: 'Manage your listings',
       onClick: () => handleNavigation('/my-spots'),
+    },
+    {
+      icon: <BarChart3 className="w-5 h-5" />,
+      label: 'Earnings Dashboard',
+      description: 'View analytics & stats',
+      onClick: () => handleNavigation('/earnings'),
     },
     {
       icon: <History className="w-5 h-5" />,
