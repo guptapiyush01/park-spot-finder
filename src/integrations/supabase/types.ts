@@ -146,6 +146,7 @@ export type Database = {
           available: number
           city: string | null
           created_at: string
+          description: string | null
           id: string
           image_url: string | null
           lat: number
@@ -153,7 +154,9 @@ export type Database = {
           name: string
           price: number
           rating: number | null
+          status: string
           total: number
+          user_id: string | null
         }
         Insert: {
           address: string
@@ -161,6 +164,7 @@ export type Database = {
           available?: number
           city?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           image_url?: string | null
           lat: number
@@ -168,7 +172,9 @@ export type Database = {
           name: string
           price: number
           rating?: number | null
+          status?: string
           total?: number
+          user_id?: string | null
         }
         Update: {
           address?: string
@@ -176,6 +182,7 @@ export type Database = {
           available?: number
           city?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           image_url?: string | null
           lat?: number
@@ -183,7 +190,9 @@ export type Database = {
           name?: string
           price?: number
           rating?: number | null
+          status?: string
           total?: number
+          user_id?: string | null
         }
         Relationships: []
       }

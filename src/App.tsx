@@ -15,6 +15,7 @@ import BookingConfirmation from "./pages/BookingConfirmation";
 import ActiveBooking from "./pages/ActiveBooking";
 import BookingHistory from "./pages/BookingHistory";
 import UserProfile from "./pages/UserProfile";
+import AddSpot from "./pages/AddSpot";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,8 @@ const App = () => (
               <Route path="/active-booking" element={<ActiveBooking />} />
               <Route path="/history" element={<BookingHistory />} />
               <Route path="/profile" element={<UserProfile />} />
+              <Route path="/add-spot" element={<AddSpot />} />
+              <Route path="*" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthCallbackHandler>
